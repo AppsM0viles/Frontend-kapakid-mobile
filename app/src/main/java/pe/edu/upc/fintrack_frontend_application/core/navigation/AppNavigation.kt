@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import pe.edu.upc.fintrack_frontend_application.iam.presentation.login.LoginScreen
+import pe.edu.upc.fintrack_frontend_application.iam.presentation.register.RegisterScreen
 import pe.edu.upc.fintrack_frontend_application.iam.presentation.profile.ProfileScreen
 import pe.edu.upc.fintrack_frontend_application.documents.presentation.list.DocumentListScreen
 import pe.edu.upc.fintrack_frontend_application.documents.presentation.detail.DniScreen
@@ -19,14 +20,40 @@ fun AppNavigation(navController: NavHostController) {
         navController = navController,
         startDestination = LoginRoute
     ) {
+        // --- CONTEXTO IAM ---
         composable<LoginRoute> {
             LoginScreen(
                 onLoginSuccess = {
                     navController.navigate(DocumentListRoute) { popUpTo(LoginRoute) { inclusive = true } }
+                },
+                onNavigateToRegister = {
+                    navController.navigate(RegisterRoute)
                 }
             )
         }
 
+        composable<RegisterRoute> {
+            RegisterScreen(
+                onRegisterSuccess = {
+                    // Si se registra con éxito, lo mandamos directo al Home
+                    navController.navigate(DocumentListRoute) { popUpTo(LoginRoute) { inclusive = true } }
+                },
+                onBackToLogin = {
+                    // Regresa a la pantalla anterior (Login)
+                    navController.navigateUp()
+                }
+            )
+        }
+
+        composable<ProfileRoute> {
+            ProfileScreen(
+                onLogoutClick = {
+                    navController.navigate(LoginRoute) { popUpTo(0) { inclusive = true } }
+                }
+            )
+        }
+
+        // --- CONTEXTO DOCUMENTS ---
         composable<DocumentListRoute> {
             DocumentListScreen(
                 onNavigateToDni = { navController.navigate(DniDetailRoute(it)) },
@@ -47,23 +74,17 @@ fun AppNavigation(navController: NavHostController) {
             CarneScreen(documentId = route.documentId, onBackClick = { navController.navigateUp() })
         }
 
+        // --- CONTEXTO TRANSPORTATION ---
         composable<TransportRoute> {
             RechargeScreen(onBackClick = { navController.navigateUp() })
         }
 
+        // --- CONTEXTO NOTIFICATIONS ---
         composable<InboxRoute> {
             InboxScreen(
                 onNavigateToHome = { navController.navigate(DocumentListRoute) { popUpTo(0) { inclusive = true } } },
                 onNavigateToRecharges = { navController.navigate(TransportRoute) { launchSingleTop = true } },
                 onNavigateToProfile = { navController.navigate(ProfileRoute) { launchSingleTop = true } }
-            )
-        }
-
-        composable<ProfileRoute> {
-            ProfileScreen(
-                onLogoutClick = {
-                    navController.navigate(LoginRoute) { popUpTo(0) { inclusive = true } }
-                }
             )
         }
     }

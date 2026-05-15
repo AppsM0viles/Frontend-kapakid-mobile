@@ -7,6 +7,9 @@ import kotlinx.serialization.Serializable
 object LoginRoute
 
 @Serializable
+object RegisterRoute // <-- La nueva ruta añadida
+
+@Serializable
 object ProfileRoute
 
 // Contexto Documents
