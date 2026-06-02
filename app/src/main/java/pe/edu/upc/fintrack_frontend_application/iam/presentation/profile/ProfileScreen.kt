@@ -29,6 +29,10 @@ import androidx.compose.ui.unit.sp
 import pe.edu.upc.fintrack_frontend_application.core.ui.theme.BackgroundWhite
 import pe.edu.upc.fintrack_frontend_application.core.ui.theme.SuccessGreen
 
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
+import pe.edu.upc.fintrack_frontend_application.core.network.SessionManager
+import androidx.compose.runtime.remember
 @Composable
 fun ProfileScreen(
     onLogoutClick: () -> Unit
@@ -57,8 +61,7 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Ana María García",
-            fontSize = 20.sp,
+            text = remember { SessionManager.userEmail } ?: "Usuario",            fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black
         )
@@ -119,4 +122,11 @@ fun ProfileMenuButton(title: String) {
             fontWeight = FontWeight.Medium
         )
     }
+}
+
+
+@Preview(showBackground = true)
+@Composable
+fun ProfileScreenPreview() {
+    ProfileScreen(onLogoutClick = {})
 }

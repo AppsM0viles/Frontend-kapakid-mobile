@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import pe.edu.upc.fintrack_frontend_application.iam.data.repository.IamRepository
-import pe.edu.upc.fintrack_frontend_application.iam.domain.model.User
 import pe.edu.upc.fintrack_frontend_application.iam.presentation.login.AuthState
 
 class RegisterViewModel : ViewModel() {
@@ -27,8 +26,8 @@ class RegisterViewModel : ViewModel() {
 
         _authState.value = AuthState.Loading
         viewModelScope.launch {
-            val newUser = User(email = email.trim(), password = pass, firstName = name, lastName = lastName)
-            val result = repository.register(newUser)
+            val fullName = "$name $lastName"
+            val result = repository.register(fullName, email.trim(), pass)
             if (result != null) {
                 _authState.value = AuthState.Success
             } else {
@@ -36,5 +35,6 @@ class RegisterViewModel : ViewModel() {
             }
         }
     }
+
     fun resetState() { _authState.value = AuthState.Idle }
 }

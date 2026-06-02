@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import pe.edu.upc.fintrack_frontend_application.iam.data.repository.IamRepository
+import pe.edu.upc.fintrack_frontend_application.core.network.SessionManager
 
 sealed class AuthState {
     object Idle : AuthState()
@@ -27,8 +28,10 @@ class LoginViewModel : ViewModel() {
         }
         _authState.value = AuthState.Loading
         viewModelScope.launch {
-            val user = repository.login(email.trim(), pass)
-            if (user != null) {
+            val response = repository.login(email.trim(), pass)
+            if (response != null) {
+                SessionManager.token = response.token
+                SessionManager.userEmail = email.trim()
                 _authState.value = AuthState.Success
             } else {
                 _authState.value = AuthState.Error("Correo o contraseña incorrectos")
