@@ -31,6 +31,10 @@ data class CreateTransportCardRequest(
     val cardNumber: String
 )
 
+data class CreateCardResponse(
+    val id: String
+)
+
 interface AppApiService {
     @GET("api/Documents/user/{userId}")
     suspend fun getDocuments(@Path("userId") userId: String): List<DocumentDto>
@@ -42,13 +46,13 @@ interface AppApiService {
     suspend fun getPaymentCards(@Path("userId") userId: String): List<PaymentCardDto>
 
     @POST("api/Wallet/payment-cards")
-    suspend fun createPaymentCard(@Body request: CreatePaymentCardRequest): Any
+    suspend fun createPaymentCard(@Body request: CreatePaymentCardRequest): CreateCardResponse
 
     @GET("api/Wallet/transport-cards/user/{userId}")
     suspend fun getTransportCards(@Path("userId") userId: String): List<TransportCardDto>
 
     @POST("api/Wallet/transport-cards")
-    suspend fun createTransportCard(@Body request: CreateTransportCardRequest): Any
+    suspend fun createTransportCard(@Body request: CreateTransportCardRequest): CreateCardResponse
 
     @GET("api/Notifications/user/{userId}")
     suspend fun getNotifications(@Path("userId") userId: String): List<NotificationDto>
