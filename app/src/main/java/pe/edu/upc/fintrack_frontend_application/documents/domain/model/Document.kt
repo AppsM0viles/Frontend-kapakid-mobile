@@ -11,5 +11,7 @@ data class DigitalDocument(
     val documentNumber: String,
     val expirationDate: String,
     val institution: String,
-    val isVerified: Boolean
+    val isVerified: Boolean,
+    var extraInfo: String = "",
+    var isEdited: Boolean = false
 )

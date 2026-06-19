@@ -4,17 +4,18 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    private const val BASE_URL = "https://backend-kapakid.onrender.com/"
+    // New URL based on image_8.png, but set as Base URL
+    private const val BASE_URL = "https://backend-kapakid-7bu6.onrender.com/"
 
-    val instance: Retrofit by lazy {
+    private val retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
 
-    // Asegúrate de que esta función esté aquí adentro
+    // Expose a public createService function to be called like RetrofitClient.createService()
     fun <T> createService(serviceClass: Class<T>): T {
-        return instance.create(serviceClass)
+        return retrofit.create(serviceClass)
     }
 }

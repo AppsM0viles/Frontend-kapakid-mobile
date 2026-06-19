@@ -1,5 +1,4 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
-
 package pe.edu.upc.fintrack_frontend_application.notifications.presentation
 
 import androidx.compose.foundation.background
@@ -22,8 +21,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import pe.edu.upc.fintrack_frontend_application.core.network.SessionManager
 import pe.edu.upc.fintrack_frontend_application.core.ui.components.BottomNavBar
 import pe.edu.upc.fintrack_frontend_application.core.ui.theme.BackgroundWhite
 import pe.edu.upc.fintrack_frontend_application.core.ui.theme.PrimaryBlue
@@ -52,17 +50,12 @@ fun InboxScreen(
     onNavigateToRecharges: () -> Unit,
     onNavigateToProfile: () -> Unit
 ) {
-    val alerts = listOf(
-        Alert("1", "DNI vencido", "Tu DNI digital expiró el 01/04/2026. Actualiza tus documentos para evitar restricciones.", "Ver documento", AlertType.WARNING),
-        Alert("2", "Carné universitario por vencer", "El carné de Lucas Fernández vence el 15/05/2027. Solicita renovación con tu facultad.", "Ver carné", AlertType.INFO),
-        Alert("3", "Saldo bajo en Metropolitano", "Tu saldo actual es S/ 1.50. Recarga para evitar inconvenientes en tu viaje.", "Recargar ahora", AlertType.WARNING),
-        Alert("4", "Recarga fallida", "Tu intento de recarga el 02/05/2026 falló por error en la cuenta. Intenta nuevamente.", "Reintentar", AlertType.ERROR)
-    )
+    val alerts = SessionManager.notifications.reversed()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Buzón", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
+                title = { Text("Buzón de Notificaciones", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
                 actions = {
                     Text(
                         text = "${alerts.size} alertas",
@@ -93,9 +86,19 @@ fun InboxScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
-            items(alerts) { alert ->
-                AlertItemCard(alert)
+
+            if (alerts.isEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxSize().padding(top = 64.dp), contentAlignment = Alignment.Center) {
+                        Text("No tienes notificaciones recientes.", color = Color.Gray)
+                    }
+                }
+            } else {
+                items(alerts) { alert ->
+                    AlertItemCard(alert)
+                }
             }
+
             item { Spacer(modifier = Modifier.height(16.dp)) }
         }
     }
@@ -112,18 +115,18 @@ fun AlertItemCard(alert: Alert) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        shape = RoundedCornerShape(12.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Row(
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth(),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .background(bgColor),
                 contentAlignment = Alignment.Center
@@ -141,27 +144,17 @@ fun AlertItemCard(alert: Alert) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = alert.title,
-                    fontSize = 14.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = alert.description,
-                    fontSize = 12.sp,
-                    color = Color.Gray,
-                    lineHeight = 16.sp
+                    fontSize = 13.sp,
+                    color = Color.DarkGray,
+                    lineHeight = 18.sp
                 )
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Button(
-                    onClick = { /* Acción dependiendo del tipo */ },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                    modifier = Modifier.height(36.dp),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(text = alert.actionText, fontSize = 12.sp)
-                }
             }
         }
     }
