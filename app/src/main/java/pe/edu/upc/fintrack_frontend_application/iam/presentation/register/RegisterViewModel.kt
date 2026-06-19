@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import pe.edu.upc.fintrack_frontend_application.core.network.SessionManager
 import pe.edu.upc.fintrack_frontend_application.iam.data.repository.IamRepository
 import pe.edu.upc.fintrack_frontend_application.iam.presentation.login.AuthState
 
@@ -25,7 +24,6 @@ class RegisterViewModel : ViewModel() {
             return
         }
 
-        // Validación estricta de contraseña: Min 8 chars, 1 mayúscula, 1 carácter especial
         val passwordPattern = "^(?=.*[A-Z])(?=.*[@#\$%^&+=!_\\-]).{8,}$".toRegex()
         if (!passwordPattern.matches(pass)) {
             _authState.value = AuthState.Error("La contraseña debe tener mín. 8 caracteres, una mayúscula y un carácter especial.")
@@ -37,29 +35,28 @@ class RegisterViewModel : ViewModel() {
             return
         }
 
+        val dateParts = birthDate.split("/")
+        val formattedDate = if (dateParts.size == 3) {
+            "${dateParts[2]}-${dateParts[1]}-${dateParts[0]}T00:00:00Z"
+        } else {
+            _authState.value = AuthState.Error("Formato de fecha inválido. Usa DD/MM/AAAA")
+            return
+        }
+
         _authState.value = AuthState.Loading
         viewModelScope.launch {
             val fullName = "$name $lastName"
-            val result = repository.register(fullName, email.trim(), pass)
+            val result = repository.register(fullName, email.trim(), pass, dni, formattedDate, isStudent)
 
             if (result != null) {
-                SessionManager.token = result.token
-                SessionManager.userEmail = email.trim()
-                SessionManager.userName = name
-                SessionManager.userDni = dni
-                SessionManager.birthDate = birthDate // Guardamos la fecha
-                SessionManager.isStudent = isStudent
-
-                SessionManager.documents.clear()
-                SessionManager.transportCards.clear()
-                SessionManager.paymentCards.clear()
-                SessionManager.notifications.clear()
-
                 _authState.value = AuthState.Success
             } else {
-                _authState.value = AuthState.Error("Error al registrar en el servidor.")
+                _authState.value = AuthState.Error("Error al registrar en el servidor. Verifica los datos.")
             }
         }
     }
-    fun resetState() { _authState.value = AuthState.Idle }
+
+    fun resetState() {
+        _authState.value = AuthState.Idle
+    }
 }

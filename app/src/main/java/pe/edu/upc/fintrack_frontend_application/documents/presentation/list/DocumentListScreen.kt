@@ -21,7 +21,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+import pe.edu.upc.fintrack_frontend_application.core.network.AppApiService
+import pe.edu.upc.fintrack_frontend_application.core.network.CreateDocumentRequest
+import pe.edu.upc.fintrack_frontend_application.core.network.CreatePaymentCardRequest
+import pe.edu.upc.fintrack_frontend_application.core.network.CreateTransportCardRequest
 import pe.edu.upc.fintrack_frontend_application.core.network.PaymentCard
+import pe.edu.upc.fintrack_frontend_application.core.network.RetrofitClient
 import pe.edu.upc.fintrack_frontend_application.core.network.SessionManager
 import pe.edu.upc.fintrack_frontend_application.core.ui.components.BottomNavBar
 import pe.edu.upc.fintrack_frontend_application.core.ui.theme.BackgroundWhite
@@ -29,7 +35,6 @@ import pe.edu.upc.fintrack_frontend_application.core.ui.theme.PrimaryBlue
 import pe.edu.upc.fintrack_frontend_application.documents.domain.model.DigitalDocument
 import pe.edu.upc.fintrack_frontend_application.documents.domain.model.DocumentType
 import pe.edu.upc.fintrack_frontend_application.transportation.domain.model.TransportCard
-import java.util.UUID
 import kotlin.random.Random
 
 @Composable
@@ -42,6 +47,9 @@ fun DocumentListScreen(
     onNavigateToInbox: () -> Unit
 ) {
     val dynamicName = remember { SessionManager.userName ?: "Usuario" }
+    val appApi = remember { RetrofitClient.createService(AppApiService::class.java) }
+    val coroutineScope = rememberCoroutineScope()
+
     var showAddMenu by remember { mutableStateOf(false) }
     var showDocumentDialog by remember { mutableStateOf(false) }
     var showTransportDialog by remember { mutableStateOf(false) }
@@ -170,10 +178,39 @@ fun DocumentListScreen(
                         } else if (selectedType == DocumentType.CARNE_UNIVERSITARIO && SessionManager.documents.any { it.type == DocumentType.CARNE_UNIVERSITARIO }) {
                             errorMessage = "Ya tienes un Carné registrado."
                         } else {
-                            val prefix = if (selectedType == DocumentType.DNI) "DNI" else "CRN"
-                            val newId = "$prefix-${UUID.randomUUID().toString().take(8).uppercase()}"
-                            SessionManager.documents.add(DigitalDocument(newId, selectedType, SessionManager.userName ?: "", SessionManager.userDni ?: "00000000", "12/12/2030", if(selectedType == DocumentType.DNI) "RENIEC" else "Universidad", true))
-                            showDocumentDialog = false; errorMessage = ""
+                            coroutineScope.launch {
+                                try {
+                                    val userDniValue = SessionManager.userDni ?: ""
+                                    val responseDoc = appApi.createDocument(
+                                        CreateDocumentRequest(
+                                            userId = SessionManager.userId ?: "",
+                                            documentNumber = userDniValue,
+                                            fullName = SessionManager.userName ?: "",
+                                            type = if (selectedType == DocumentType.DNI) 1 else 4,
+                                            issueDate = "2026-06-19T00:00:00Z",
+                                            expirationDate = "2034-06-19T00:00:00Z",
+                                            filePath = ""
+                                        )
+                                    )
+                                    SessionManager.documents.add(
+                                        DigitalDocument(
+                                            id = responseDoc.id,
+                                            type = if (responseDoc.type == 1) DocumentType.DNI else DocumentType.CARNE_UNIVERSITARIO,
+                                            ownerName = responseDoc.fullName,
+                                            documentNumber = responseDoc.documentNumber,
+                                            expirationDate = "12/12/2030",
+                                            institution = if (responseDoc.type == 1) "RENIEC" else "Universidad",
+                                            isVerified = true,
+                                            extraInfo = "",
+                                            isEdited = false
+                                        )
+                                    )
+                                    showDocumentDialog = false
+                                    errorMessage = ""
+                                } catch (e: Exception) {
+                                    errorMessage = "Error al guardar el documento remoto"
+                                }
+                            }
                         }
                     }) { Text("Vincular") }
                 },
@@ -241,9 +278,34 @@ fun DocumentListScreen(
                         onClick = {
                             val cleanNumber = cardNumber.replace("-", "")
                             if (cleanNumber.length >= 14 && cardBrand != "Desconocido" && expiry.length == 5 && cvv.length >= 3) {
-                                val randomBalance = 100.0 + (2000.0 - 100.0) * Random.nextDouble()
-                                SessionManager.paymentCards.add(PaymentCard(UUID.randomUUID().toString(), cleanNumber, cardBrand, randomBalance, expiry, cvv))
-                                showPaymentDialog = false
+                                coroutineScope.launch {
+                                    try {
+                                        val randomBalance = 100.0 + (2000.0 - 100.0) * Random.nextDouble()
+                                        val responseCard = appApi.createPaymentCard(
+                                            CreatePaymentCardRequest(
+                                                userId = SessionManager.userId ?: "",
+                                                fullNumber = cleanNumber,
+                                                brand = cardBrand,
+                                                balance = randomBalance,
+                                                expiryDate = expiry,
+                                                cvv = cvv
+                                            )
+                                        )
+                                        SessionManager.paymentCards.add(
+                                            PaymentCard(
+                                                id = responseCard.id,
+                                                fullNumber = cleanNumber,
+                                                brand = cardBrand,
+                                                balance = randomBalance,
+                                                expiryDate = expiry,
+                                                cvv = cvv
+                                            )
+                                        )
+                                        showPaymentDialog = false
+                                    } catch (e: Exception) {
+                                        errorMessage = "Error al comunicarse con el servidor"
+                                    }
+                                }
                             }
                         },
                         enabled = cardNumber.replace("-", "").length >= 14 && expiry.length == 5 && cvv.length >= 3
@@ -283,8 +345,30 @@ fun DocumentListScreen(
                     Button(onClick = {
                         val cleanNumber = cardNumber.replace("-", "")
                         if (cleanNumber.isNotBlank()) {
-                            SessionManager.transportCards.add(TransportCard(UUID.randomUUID().toString(), selectedTransport, 0.0, cleanNumber, "Hoy"))
-                            showTransportDialog = false
+                            coroutineScope.launch {
+                                try {
+                                    val responseCard = appApi.createTransportCard(
+                                        CreateTransportCardRequest(
+                                            userId = SessionManager.userId ?: "",
+                                            type = selectedTransport,
+                                            balance = 0.0,
+                                            cardNumber = cleanNumber
+                                        )
+                                    )
+                                    SessionManager.transportCards.add(
+                                        TransportCard(
+                                            id = responseCard.id,
+                                            type = selectedTransport,
+                                            balance = 0.0,
+                                            cardNumber = cleanNumber,
+                                            lastRechargeDate = "Hoy"
+                                        )
+                                    )
+                                    showTransportDialog = false
+                                } catch (e: Exception) {
+                                    errorMessage = "Error al comunicarse con el servidor"
+                                }
+                            }
                         }
                     }) { Text("Añadir") }
                 },
