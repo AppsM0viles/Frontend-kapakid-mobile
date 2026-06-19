@@ -18,6 +18,7 @@ data class PaymentCard(
 )
 
 object SessionManager {
+    var userId: String? = null
     var token: String? = null
     var userEmail: String? = null
     var userName: String? = null
@@ -31,6 +32,7 @@ object SessionManager {
     val notifications = mutableStateListOf<Alert>()
 
     fun clearSession() {
+        userId = null
         token = null
         userEmail = null
         userName = null

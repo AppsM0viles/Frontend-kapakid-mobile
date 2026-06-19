@@ -1,12 +1,12 @@
 package pe.edu.upc.fintrack_frontend_application.iam.data.repository
 
 import android.util.Log
+import pe.edu.upc.fintrack_frontend_application.core.network.LoginResponse
+import pe.edu.upc.fintrack_frontend_application.core.network.RegisterResponse
 import pe.edu.upc.fintrack_frontend_application.core.network.RetrofitClient
 import pe.edu.upc.fintrack_frontend_application.iam.data.network.IamApiService
 import pe.edu.upc.fintrack_frontend_application.iam.domain.model.LoginRequest
-import pe.edu.upc.fintrack_frontend_application.iam.domain.model.LoginResponse
 import pe.edu.upc.fintrack_frontend_application.iam.domain.model.RegisterRequest
-import pe.edu.upc.fintrack_frontend_application.iam.domain.model.RegisterResponse
 
 class IamRepository {
     private val api = RetrofitClient.createService(IamApiService::class.java)
@@ -20,9 +20,16 @@ class IamRepository {
         }
     }
 
-    suspend fun register(nombre: String, email: String, password: String): RegisterResponse? {
+    suspend fun register(
+        nombre: String,
+        email: String,
+        password: String,
+        dni: String,
+        fechaNacimiento: String,
+        esUniversitario: Boolean
+    ): RegisterResponse? {
         return try {
-            api.register(RegisterRequest(nombre, email, password))
+            api.register(RegisterRequest(nombre, email, password, dni, fechaNacimiento, esUniversitario))
         } catch (e: Exception) {
             Log.e("IamRepository", "Error en Registro: ${e.message}")
             null
