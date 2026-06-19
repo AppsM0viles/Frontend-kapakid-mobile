@@ -8,7 +8,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import pe.edu.upc.fintrack_frontend_application.iam.data.repository.IamRepository
 import pe.edu.upc.fintrack_frontend_application.core.network.SessionManager
+import java.util.Locale
 
+// ¡Esta es la clase que faltaba y que soluciona todos los errores rojos!
 sealed class AuthState {
     object Idle : AuthState()
     object Loading : AuthState()
@@ -32,6 +34,13 @@ class LoginViewModel : ViewModel() {
             if (response != null) {
                 SessionManager.token = response.token
                 SessionManager.userEmail = email.trim()
+
+                // Estrategia temporal: Extrae el identificador del correo como nombre dinámico
+                val parsedName = email.substringBefore("@")
+                    .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+
+                SessionManager.userName = parsedName
+
                 _authState.value = AuthState.Success
             } else {
                 _authState.value = AuthState.Error("Correo o contraseña incorrectos")

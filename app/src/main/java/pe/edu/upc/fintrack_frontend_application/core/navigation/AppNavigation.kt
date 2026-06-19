@@ -13,6 +13,7 @@ import pe.edu.upc.fintrack_frontend_application.documents.presentation.detail.Dn
 import pe.edu.upc.fintrack_frontend_application.documents.presentation.detail.CarneScreen
 import pe.edu.upc.fintrack_frontend_application.transportation.presentation.recharge.RechargeScreen
 import pe.edu.upc.fintrack_frontend_application.notifications.presentation.InboxScreen
+import pe.edu.upc.fintrack_frontend_application.documents.presentation.detail.PaymentCardDetailScreen
 
 @Composable
 fun AppNavigation(navController: NavHostController) {
@@ -20,7 +21,6 @@ fun AppNavigation(navController: NavHostController) {
         navController = navController,
         startDestination = LoginRoute
     ) {
-        // --- CONTEXTO IAM ---
         composable<LoginRoute> {
             LoginScreen(
                 onLoginSuccess = {
@@ -31,20 +31,16 @@ fun AppNavigation(navController: NavHostController) {
                 }
             )
         }
-
         composable<RegisterRoute> {
             RegisterScreen(
                 onRegisterSuccess = {
-                    // Si se registra con éxito, lo mandamos directo al Home
                     navController.navigate(DocumentListRoute) { popUpTo(LoginRoute) { inclusive = true } }
                 },
                 onBackToLogin = {
-                    // Regresa a la pantalla anterior (Login)
                     navController.navigateUp()
                 }
             )
         }
-
         composable<ProfileRoute> {
             ProfileScreen(
                 onLogoutClick = {
@@ -52,34 +48,31 @@ fun AppNavigation(navController: NavHostController) {
                 }
             )
         }
-
-        // --- CONTEXTO DOCUMENTS ---
         composable<DocumentListRoute> {
             DocumentListScreen(
                 onNavigateToDni = { navController.navigate(DniDetailRoute(it)) },
                 onNavigateToCarne = { navController.navigate(CarneDetailRoute(it)) },
+                onNavigateToPaymentCard = { navController.navigate(PaymentCardDetailRoute(it)) },
                 onNavigateToProfile = { navController.navigate(ProfileRoute) { launchSingleTop = true } },
                 onNavigateToRecharges = { navController.navigate(TransportRoute) { launchSingleTop = true } },
                 onNavigateToInbox = { navController.navigate(InboxRoute) { launchSingleTop = true } }
             )
         }
-
         composable<DniDetailRoute> { backStackEntry ->
             val route = backStackEntry.toRoute<DniDetailRoute>()
             DniScreen(documentId = route.documentId, onBackClick = { navController.navigateUp() })
         }
-
         composable<CarneDetailRoute> { backStackEntry ->
             val route = backStackEntry.toRoute<CarneDetailRoute>()
             CarneScreen(documentId = route.documentId, onBackClick = { navController.navigateUp() })
         }
-
-        // --- CONTEXTO TRANSPORTATION ---
+        composable<PaymentCardDetailRoute> { backStackEntry ->
+            val route = backStackEntry.toRoute<PaymentCardDetailRoute>()
+            PaymentCardDetailScreen(cardId = route.cardId, onBackClick = { navController.navigateUp() })
+        }
         composable<TransportRoute> {
             RechargeScreen(onBackClick = { navController.navigateUp() })
         }
-
-        // --- CONTEXTO NOTIFICATIONS ---
         composable<InboxRoute> {
             InboxScreen(
                 onNavigateToHome = { navController.navigate(DocumentListRoute) { popUpTo(0) { inclusive = true } } },

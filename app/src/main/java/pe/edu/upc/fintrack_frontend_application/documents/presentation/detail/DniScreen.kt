@@ -1,129 +1,133 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
-
 package pe.edu.upc.fintrack_frontend_application.documents.presentation.detail
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import pe.edu.upc.fintrack_frontend_application.core.network.SessionManager
 import pe.edu.upc.fintrack_frontend_application.core.ui.theme.BackgroundWhite
 import pe.edu.upc.fintrack_frontend_application.core.ui.theme.PrimaryBlue
 
 @Composable
-fun DniScreen(
-    documentId: String,
-    onBackClick: () -> Unit
-) {
+fun DniScreen(documentId: String, onBackClick: () -> Unit) {
+    val documentIndex = SessionManager.documents.indexOfFirst { it.id == documentId }
+    val document = if (documentIndex != -1) SessionManager.documents[documentIndex] else null
+    val userName = SessionManager.userName ?: "Usuario"
+
+    var showEditDialog by remember { mutableStateOf(false) }
+    var additionalInfo by remember { mutableStateOf("") }
+
+    val randomUbigeo = remember { (100000..999999).random().toString() }
+    val randomCivilStatus = remember { listOf("SOLTERO(A)", "CASADO(A)", "DIVORCIADO(A)").random() }
+    val randomSex = remember { listOf("M", "F").random() }
+    val randomExpiration = remember { "${(1..28).random().toString().padStart(2, '0')}/${(1..12).random().toString().padStart(2, '0')}/${(2027..2034).random()}" }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("DNI Digital", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = PrimaryBlue)
-                    }
-                },
+                navigationIcon = { IconButton(onClick = onBackClick) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = PrimaryBlue) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BackgroundWhite)
             )
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(BackgroundWhite)
-                .padding(paddingValues)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(modifier = Modifier.fillMaxSize().background(BackgroundWhite).padding(paddingValues).padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            if (document == null) {
+                Text("Documento no encontrado", color = Color.Red)
+                return@Scaffold
+            }
+
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFFE8EAF6), RoundedCornerShape(8.dp))
-                            .padding(8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = "República del Perú", fontWeight = FontWeight.Bold, color = PrimaryBlue)
-                    }
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Text(text = "República del Perú", fontWeight = FontWeight.Bold, color = PrimaryBlue, modifier = Modifier.padding(bottom = 24.dp))
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Nombres Completos", fontSize = 10.sp, color = Color.Gray)
+                            Text(userName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp, 130.dp)
-                                .background(Color.LightGray, RoundedCornerShape(8.dp))
-                        )
+                            Text("DNI", fontSize = 10.sp, color = Color.Gray)
+                            Text(document.documentNumber, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                        Column(modifier = Modifier.padding(start = 16.dp).weight(1f)) {
-                            DocumentField("Nombres", "Ana María")
-                            DocumentField("Apellidos", "García")
-                            DocumentField("DNI", "76543210")
-                            DocumentField("Vencimiento", "01/04/2030")
+                            Text("Fecha de Nacimiento", fontSize = 10.sp, color = Color.Gray)
+                            Text(SessionManager.birthDate ?: "--/--/----", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        }
 
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = "Verificado", tint = Color(0xFF4CAF50), modifier = Modifier.size(16.dp))
-                                Text(text = "Verificado por RENIEC", fontSize = 12.sp, color = Color(0xFF4CAF50), modifier = Modifier.padding(start = 4.dp))
-                            }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Sexo", fontSize = 10.sp, color = Color.Gray)
+                            Text(randomSex, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Text("Estado Civil", fontSize = 10.sp, color = Color.Gray)
+                            Text(randomCivilStatus, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Text("Ubigeo", fontSize = 10.sp, color = Color.Gray)
+                            Text(randomUbigeo, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
-                    Box(modifier = Modifier.size(80.dp).background(Color.Black).align(Alignment.Start))
+                    HorizontalDivider(color = Color(0xFFEEEEEE))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text("Fecha de Caducidad", fontSize = 10.sp, color = Color.Gray)
+                    Text(randomExpiration, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+
+                    if (document.isEdited && document.extraInfo.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Información Médica / Alergias", fontSize = 10.sp, color = Color.Gray)
+                        Text(document.extraInfo, color = PrimaryBlue, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = { },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-            ) {
-                Text("Compartir Documento", fontSize = 16.sp)
+            if (!document.isEdited) {
+                Button(onClick = { showEditDialog = true }, modifier = Modifier.fillMaxWidth().height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue), shape = RoundedCornerShape(12.dp)) {
+                    Text("Añadir Información Médica", fontSize = 16.sp)
+                }
             }
         }
-    }
-}
 
-@Composable
-fun DocumentField(label: String, value: String) {
-    Column(modifier = Modifier.padding(bottom = 8.dp)) {
-        Text(text = label, fontSize = 10.sp, color = Color.Gray)
-        Text(text = value, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+        if (showEditDialog && document != null) {
+            AlertDialog(
+                onDismissRequest = { showEditDialog = false },
+                title = { Text("Información Adicional") },
+                text = {
+                    Column {
+                        Text("Solo puedes editar esta información una vez.", fontSize = 12.sp, color = Color.Red)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedTextField(value = additionalInfo, onValueChange = { additionalInfo = it }, label = { Text("Datos médicos / Alergias") }, modifier = Modifier.fillMaxWidth())
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        val updatedDoc = document.copy(extraInfo = additionalInfo, isEdited = true)
+                        SessionManager.documents[documentIndex] = updatedDoc
+                        showEditDialog = false
+                    }) { Text("Guardar Definitivamente") }
+                },
+                dismissButton = { TextButton(onClick = { showEditDialog = false }) { Text("Cancelar") } }
+            )
+        }
     }
 }
