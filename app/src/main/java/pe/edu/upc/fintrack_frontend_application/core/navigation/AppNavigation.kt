@@ -1,3 +1,4 @@
+// package pe.edu.upc.fintrack_frontend_application.core.navigation
 package pe.edu.upc.fintrack_frontend_application.core.navigation
 
 import androidx.compose.runtime.Composable

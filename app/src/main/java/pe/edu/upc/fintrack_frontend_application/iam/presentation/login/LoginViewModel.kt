@@ -42,7 +42,6 @@ class LoginViewModel : ViewModel() {
             val response = repository.login(email.trim(), pass)
 
             if (response != null) {
-                // 1. Guardar Identidad en Memoria
                 SessionManager.token = response.token
                 SessionManager.userId = response.user.id
                 SessionManager.userEmail = response.user.email
@@ -51,15 +50,26 @@ class LoginViewModel : ViewModel() {
                 SessionManager.birthDate = response.user.fechaNacimiento
                 SessionManager.isStudent = response.user.esUniversitario
 
-                // 2. Limpiar las listas antes de poblar
                 SessionManager.documents.clear()
                 SessionManager.paymentCards.clear()
                 SessionManager.transportCards.clear()
                 SessionManager.notifications.clear()
 
-                // 3. Descargar Documentos
                 try {
+
+
+
                     val docs = appApi.getDocuments(response.user.id)
+
+                    println("USER ID = ${response.user.id}")
+                    println("DOCUMENTOS = ${docs.size}")
+
+                    docs.forEach {
+                        println(it)
+                    }
+
+
+
                     docs.forEach { doc ->
                         SessionManager.documents.add(
                             DigitalDocument(
@@ -75,9 +85,8 @@ class LoginViewModel : ViewModel() {
                             )
                         )
                     }
-                } catch (e: Exception) { /* Loguear o manejar error silencioso */ }
+                } catch (e: Exception) {}
 
-                // 4. Descargar Tarjetas Bancarias
                 try {
                     val pCards = appApi.getPaymentCards(response.user.id)
                     pCards.forEach { card ->
@@ -92,9 +101,8 @@ class LoginViewModel : ViewModel() {
                             )
                         )
                     }
-                } catch (e: Exception) { }
+                } catch (e: Exception) {}
 
-                // 5. Descargar Tarjetas de Transporte
                 try {
                     val tCards = appApi.getTransportCards(response.user.id)
                     tCards.forEach { card ->
@@ -108,9 +116,8 @@ class LoginViewModel : ViewModel() {
                             )
                         )
                     }
-                } catch (e: Exception) { }
+                } catch (e: Exception) {}
 
-                // 6. Descargar Notificaciones
                 try {
                     val notifs = appApi.getNotifications(response.user.id)
                     notifs.forEach { notif ->
@@ -128,7 +135,7 @@ class LoginViewModel : ViewModel() {
                             )
                         )
                     }
-                } catch (e: Exception) { }
+                } catch (e: Exception) {}
 
                 _authState.value = AuthState.Success
             } else {

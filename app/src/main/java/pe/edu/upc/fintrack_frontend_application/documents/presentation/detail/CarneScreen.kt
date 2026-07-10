@@ -1,4 +1,3 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
 package pe.edu.upc.fintrack_frontend_application.documents.presentation.detail
 
 import androidx.compose.foundation.background
@@ -18,6 +17,7 @@ import pe.edu.upc.fintrack_frontend_application.core.network.SessionManager
 import pe.edu.upc.fintrack_frontend_application.core.ui.theme.BackgroundWhite
 import pe.edu.upc.fintrack_frontend_application.core.ui.theme.PrimaryBlue
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CarneScreen(documentId: String, onBackClick: () -> Unit) {
     val document = SessionManager.documents.find { it.id == documentId }

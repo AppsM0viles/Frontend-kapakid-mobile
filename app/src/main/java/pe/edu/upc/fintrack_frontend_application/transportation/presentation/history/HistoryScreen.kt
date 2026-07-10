@@ -20,7 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import pe.edu.upc.fintrack_frontend_application.core.ui.theme.BackgroundWhite
-import pe.edu.upc.fintrack_frontend_application.core.ui.theme.PrimaryBlue
+import pe.edu.upc.fintrack_frontend_application.ui.theme.PrimaryBlue
 
 @Composable
 fun HistoryScreen(

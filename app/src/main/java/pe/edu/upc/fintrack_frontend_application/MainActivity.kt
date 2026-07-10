@@ -10,7 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
 import pe.edu.upc.fintrack_frontend_application.core.navigation.AppNavigation
-import pe.edu.upc.fintrack_frontend_application.core.ui.theme.KapakIDTheme
+import pe.edu.upc.fintrack_frontend_application.ui.theme.KapakIDTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -101,9 +101,7 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(value = editBirth, onValueChange = { editBirth = it }, label = { Text("Fecha de Nacimiento") }, modifier = Modifier.fillMaxWidth())
                     Spacer(modifier = Modifier.height(8.dp))
-
                     OutlinedTextField(value = SessionManager.userDni ?: "", onValueChange = { }, label = { Text("Documento de Identidad") }, enabled = false, modifier = Modifier.fillMaxWidth())
-                    Text("Por motivos de seguridad, el DNI no puede modificarse.", color = Color.Gray, fontSize = 11.sp, modifier = Modifier.padding(top = 8.dp))
                 }
             },
             confirmButton = {

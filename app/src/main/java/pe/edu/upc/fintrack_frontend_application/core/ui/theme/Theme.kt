@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import pe.edu.upc.fintrack_frontend_application.ui.theme.PrimaryBlue
 
 private val LightColorScheme = lightColorScheme(
     primary = PrimaryBlue,

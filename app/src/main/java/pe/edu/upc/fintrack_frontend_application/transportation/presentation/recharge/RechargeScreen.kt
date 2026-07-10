@@ -1,4 +1,3 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
 package pe.edu.upc.fintrack_frontend_application.transportation.presentation.recharge
 
 import androidx.compose.foundation.background
@@ -19,9 +18,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
+import pe.edu.upc.fintrack_frontend_application.core.network.AppApiService
 import pe.edu.upc.fintrack_frontend_application.core.network.PaymentCard
 import pe.edu.upc.fintrack_frontend_application.core.network.PaymentTransaction
+import pe.edu.upc.fintrack_frontend_application.core.network.RetrofitClient
 import pe.edu.upc.fintrack_frontend_application.core.network.SessionManager
+import pe.edu.upc.fintrack_frontend_application.core.network.UpdatePaymentBalanceRequest
+import pe.edu.upc.fintrack_frontend_application.core.network.UpdateTransportBalanceRequest
 import pe.edu.upc.fintrack_frontend_application.core.ui.theme.BackgroundWhite
 import pe.edu.upc.fintrack_frontend_application.core.ui.theme.PrimaryBlue
 import pe.edu.upc.fintrack_frontend_application.notifications.domain.model.Alert
@@ -32,12 +36,14 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RechargeScreen(
-    onBackClick: () -> Unit
-) {
+fun RechargeScreen(onBackClick: () -> Unit) {
     val fareAmount = if (SessionManager.isStudent) 1.60 else 3.20
     val fareLabel = if (SessionManager.isStudent) "Universitario (S/ 1.60)" else "General (S/ 3.20)"
+
+    val appApi = remember { RetrofitClient.createService(AppApiService::class.java) }
+    val coroutineScope = rememberCoroutineScope()
 
     var showTravelDialog by remember { mutableStateOf<TransportCard?>(null) }
     var showRechargeDialog by remember { mutableStateOf<TransportCard?>(null) }
@@ -47,10 +53,8 @@ fun RechargeScreen(
     var actionError by remember { mutableStateOf("") }
     var actionSuccess by remember { mutableStateOf("") }
 
-    val transportCards = SessionManager.transportCards
-    val paymentCards = SessionManager.paymentCards
-
     Scaffold(
+        containerColor = BackgroundWhite,
         topBar = {
             TopAppBar(
                 title = { Text("Mi Transporte", fontSize = 18.sp, fontWeight = FontWeight.SemiBold) },
@@ -68,13 +72,13 @@ fun RechargeScreen(
                 Text(actionSuccess, color = Color(0xFF4CAF50), fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
             }
 
-            if (transportCards.isEmpty()) {
+            if (SessionManager.transportCards.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No tienes tarjetas de transporte.", color = Color.Gray)
                 }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                    items(transportCards) { card ->
+                    items(SessionManager.transportCards) { card ->
                         TransportActionCard(
                             card = card,
                             onUseClick = { showTravelDialog = card; actionSuccess = ""; actionError = "" },
@@ -105,18 +109,22 @@ fun RechargeScreen(
                 confirmButton = {
                     Button(onClick = {
                         if (card.balance >= fareAmount) {
-                            val index = SessionManager.transportCards.indexOfFirst { it.id == card.id }
-                            if (index != -1) {
-                                val updatedCard = card.copy(balance = card.balance - fareAmount)
-                                SessionManager.transportCards[index] = updatedCard
+                            coroutineScope.launch {
+                                try {
+                                    val newBalance = card.balance - fareAmount
+                                    appApi.updateTransportBalance(UpdateTransportBalanceRequest(card.id, newBalance))
 
-                                val dateStr = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())
-                                SessionManager.notifications.add(
-                                    Alert(UUID.randomUUID().toString(), "Viaje Pagado", "Se descontó S/ ${"%.2f".format(fareAmount)} de tu tarjeta ${card.type} el $dateStr.", "Ver historial", AlertType.INFO)
-                                )
-
-                                actionSuccess = "Pasaje cobrado con éxito."
-                                showTravelDialog = null
+                                    val index = SessionManager.transportCards.indexOfFirst { it.id == card.id }
+                                    if (index != -1) {
+                                        SessionManager.transportCards[index] = card.copy(balance = newBalance)
+                                        val dateStr = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date())
+                                        SessionManager.notifications.add(Alert(UUID.randomUUID().toString(), "Viaje Pagado", "Se descontó S/ ${"%.2f".format(fareAmount)} de tu tarjeta ${card.type} el $dateStr.", "Ver historial", AlertType.INFO))
+                                        actionSuccess = "Pasaje cobrado con éxito."
+                                        showTravelDialog = null
+                                    }
+                                } catch (e: Exception) {
+                                    actionError = "Error al conectar con el servidor."
+                                }
                             }
                         } else {
                             actionError = "Saldo insuficiente. Por favor recarga tu tarjeta."
@@ -145,11 +153,11 @@ fun RechargeScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        if (paymentCards.isEmpty()) {
+                        if (SessionManager.paymentCards.isEmpty()) {
                             Text("No tienes tarjetas bancarias vinculadas.", color = Color.Red, fontSize = 12.sp)
                         } else {
                             Text("Selecciona método de pago:", fontSize = 12.sp, color = Color.Gray)
-                            paymentCards.forEach { bankCard ->
+                            SessionManager.paymentCards.forEach { bankCard ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     RadioButton(
                                         selected = selectedBankCard?.id == bankCard.id,
@@ -170,53 +178,39 @@ fun RechargeScreen(
                     Button(
                         onClick = {
                             val amount = rechargeAmount.toDoubleOrNull() ?: 0.0
-                            if (amount <= 0) {
-                                actionError = "Ingresa un monto válido."
-                                return@Button
-                            }
-                            if (selectedBankCard == null) {
-                                actionError = "Selecciona una tarjeta bancaria."
-                                return@Button
-                            }
-                            if (selectedBankCard!!.balance < amount) {
-                                actionError = "Tu tarjeta ${selectedBankCard!!.brand} no tiene fondos suficientes."
-                                return@Button
-                            }
+                            if (amount <= 0) { actionError = "Ingresa un monto válido."; return@Button }
+                            if (selectedBankCard == null) { actionError = "Selecciona una tarjeta bancaria."; return@Button }
+                            if (selectedBankCard!!.balance < amount) { actionError = "Tu tarjeta ${selectedBankCard!!.brand} no tiene fondos suficientes."; return@Button }
 
-                            val bIndex = SessionManager.paymentCards.indexOfFirst { it.id == selectedBankCard!!.id }
-                            val tIndex = SessionManager.transportCards.indexOfFirst { it.id == card.id }
+                            coroutineScope.launch {
+                                try {
+                                    val newBankBalance = selectedBankCard!!.balance - amount
+                                    val newTransportBalance = card.balance + amount
 
-                            if (bIndex != -1 && tIndex != -1) {
-                                val currentDate = SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault()).format(Date())
+                                    appApi.updatePaymentBalance(UpdatePaymentBalanceRequest(selectedBankCard!!.id, newBankBalance))
+                                    appApi.updateTransportBalance(UpdateTransportBalanceRequest(card.id, newTransportBalance))
 
-                                val currentPaymentCard = SessionManager.paymentCards[bIndex]
-                                val newTransaction = PaymentTransaction(
-                                    id = UUID.randomUUID().toString(),
-                                    title = "Recarga ${card.type}",
-                                    amount = amount,
-                                    date = currentDate
-                                )
+                                    val bIndex = SessionManager.paymentCards.indexOfFirst { it.id == selectedBankCard!!.id }
+                                    val tIndex = SessionManager.transportCards.indexOfFirst { it.id == card.id }
 
-                                currentPaymentCard.balance -= amount
-                                currentPaymentCard.transactions.add(0, newTransaction)
+                                    if (bIndex != -1 && tIndex != -1) {
+                                        val currentDate = SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault()).format(Date())
+                                        SessionManager.paymentCards[bIndex].balance = newBankBalance
+                                        SessionManager.paymentCards[bIndex].transactions.add(0, PaymentTransaction(UUID.randomUUID().toString(), "Recarga ${card.type}", amount, currentDate))
+                                        SessionManager.transportCards[tIndex] = card.copy(balance = newTransportBalance, lastRechargeDate = currentDate)
+                                        SessionManager.notifications.add(Alert(UUID.randomUUID().toString(), "Recarga Exitosa", "Recargaste S/ ${"%.2f".format(amount)} a tu ${card.type}.", "Ver saldo", AlertType.INFO))
 
-                                val updatedTransport = card.copy(
-                                    balance = card.balance + amount,
-                                    lastRechargeDate = currentDate
-                                )
-                                SessionManager.transportCards[tIndex] = updatedTransport
-
-                                SessionManager.notifications.add(
-                                    Alert(UUID.randomUUID().toString(), "Recarga Exitosa", "Recargaste S/ ${"%.2f".format(amount)} a tu ${card.type}.", "Ver saldo", AlertType.INFO)
-                                )
-
-                                actionSuccess = "Recarga de S/ ${"%.2f".format(amount)} completada."
-                                showRechargeDialog = null
-                                rechargeAmount = ""
-                                selectedBankCard = null
+                                        actionSuccess = "Recarga de S/ ${"%.2f".format(amount)} completada."
+                                        showRechargeDialog = null
+                                        rechargeAmount = ""
+                                        selectedBankCard = null
+                                    }
+                                } catch (e: Exception) {
+                                    actionError = "Error al procesar la recarga en el servidor."
+                                }
                             }
                         },
-                        enabled = paymentCards.isNotEmpty()
+                        enabled = SessionManager.paymentCards.isNotEmpty()
                     ) { Text("Confirmar Recarga") }
                 },
                 dismissButton = { TextButton(onClick = { showRechargeDialog = null; rechargeAmount = ""; selectedBankCard = null }) { Text("Cancelar") } }

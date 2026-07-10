@@ -1,3 +1,4 @@
+// package pe.edu.upc.fintrack_frontend_application.core.network
 package pe.edu.upc.fintrack_frontend_application.core.network
 
 data class UserDto(

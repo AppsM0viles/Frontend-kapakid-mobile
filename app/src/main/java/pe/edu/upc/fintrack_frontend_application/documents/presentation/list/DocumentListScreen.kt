@@ -1,4 +1,3 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
 package pe.edu.upc.fintrack_frontend_application.documents.presentation.list
 
 import androidx.compose.foundation.background
@@ -46,7 +45,7 @@ fun DocumentListScreen(
     onNavigateToRecharges: () -> Unit,
     onNavigateToInbox: () -> Unit
 ) {
-    val dynamicName = remember { SessionManager.userName ?: "Usuario" }
+    var dynamicName by remember { mutableStateOf(SessionManager.userName ?: "Usuario") }
     val appApi = remember { RetrofitClient.createService(AppApiService::class.java) }
     val coroutineScope = rememberCoroutineScope()
 
@@ -56,7 +55,12 @@ fun DocumentListScreen(
     var showPaymentDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
+    LaunchedEffect(SessionManager.userName) {
+        dynamicName = SessionManager.userName ?: "Usuario"
+    }
+
     Scaffold(
+        containerColor = BackgroundWhite,
         bottomBar = { BottomNavBar("DocumentListRoute", { }, onNavigateToInbox, onNavigateToRecharges, onNavigateToProfile) },
         floatingActionButton = {
             Box {
@@ -180,11 +184,10 @@ fun DocumentListScreen(
                         } else {
                             coroutineScope.launch {
                                 try {
-                                    val userDniValue = SessionManager.userDni ?: ""
                                     val responseDoc = appApi.createDocument(
                                         CreateDocumentRequest(
                                             userId = SessionManager.userId ?: "",
-                                            documentNumber = userDniValue,
+                                            documentNumber = SessionManager.userDni ?: "",
                                             fullName = SessionManager.userName ?: "",
                                             type = if (selectedType == DocumentType.DNI) 1 else 4,
                                             issueDate = "2026-06-19T00:00:00Z",
@@ -208,7 +211,7 @@ fun DocumentListScreen(
                                     showDocumentDialog = false
                                     errorMessage = ""
                                 } catch (e: Exception) {
-                                    errorMessage = "Error al guardar el documento remoto"
+                                    errorMessage = "Error: ${e.message}"
                                 }
                             }
                         }
@@ -303,7 +306,7 @@ fun DocumentListScreen(
                                         )
                                         showPaymentDialog = false
                                     } catch (e: Exception) {
-                                        errorMessage = "Error al comunicarse con el servidor"
+                                        errorMessage = "Error al guardar la tarjeta: ${e.message}"
                                     }
                                 }
                             }
@@ -366,7 +369,7 @@ fun DocumentListScreen(
                                     )
                                     showTransportDialog = false
                                 } catch (e: Exception) {
-                                    errorMessage = "Error al comunicarse con el servidor"
+                                    errorMessage = "Error al guardar la tarjeta de transporte"
                                 }
                             }
                         }

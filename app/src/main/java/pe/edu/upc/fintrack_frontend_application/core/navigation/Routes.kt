@@ -1,3 +1,4 @@
+// package pe.edu.upc.fintrack_frontend_application.core.navigation
 package pe.edu.upc.fintrack_frontend_application.core.navigation
 
 import kotlinx.serialization.Serializable
@@ -22,9 +23,6 @@ data class CarneDetailRoute(val documentId: String)
 
 @Serializable
 object TransportRoute
-
-@Serializable
-data class RechargeRoute(val cardId: String)
 
 @Serializable
 object InboxRoute
